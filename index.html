@@ -31,49 +31,37 @@
       object-fit: contain;
     }
 
-    /* Tap-to-unmute overlay (shown only if autoplay was forced muted) */
-    #unmute-overlay {
+    /* Mute/Unmute toggle — bottom-right, just an icon with label, no circle, no dimming */
+    #mute-toggle {
       position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      cursor: pointer;
+      right: 24px;
+      bottom: 80px;
       z-index: 10;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.4s ease;
-    }
-    #unmute-overlay.visible { opacity: 1; pointer-events: all; }
-
-    .unmute-btn {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 14px;
-    }
-    .unmute-icon {
-      width: 72px;
-      height: 72px;
-      border: 2.5px solid rgba(255,255,255,0.9);
-      border-radius: 50%;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
-    }
-    .unmute-icon svg { width: 30px; height: 30px; fill: #fff; }
-    #unmute-overlay:hover .unmute-icon { background: rgba(0,0,0,0.7); }
-    .unmute-label {
-      font-size: 13px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
+      gap: 6px;
+      background: transparent;
+      border: 0;
+      padding: 6px 10px;
+      cursor: pointer;
+      color: #fff;
+      filter: drop-shadow(0 1px 4px rgba(0,0,0,0.75));
+      transition: transform 0.15s ease, opacity 0.2s ease;
       opacity: 0.9;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
     }
+    #mute-toggle:hover { opacity: 1; transform: scale(1.06); }
+    #mute-toggle svg { width: 32px; height: 32px; fill: #fff; }
+    #mute-toggle .label {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    /* Swap which icon is shown based on .muted class */
+    #mute-toggle .icon-unmute { display: none; }
+    #mute-toggle.muted .icon-unmute { display: block; }
+    #mute-toggle.muted .icon-mute { display: none; }
 
     /* Friendly message when ?video= is missing or fails */
     #message {
@@ -104,8 +92,6 @@
     CONFIG — set this to your R2 public base URL.
     Either the temporary r2.dev URL (testing) or your custom domain (production).
     Trailing slash is added automatically if missing.
-    Example: 'https://pub-xxxxxxxxxxxxxxxx.r2.dev'
-             'https://videos.example.com'
   -->
   <script>
     const VIDEO_BASE_URL = 'https://pub-11b0c6aa93f64046a3d6497688ec5a62.r2.dev';
@@ -121,16 +107,17 @@
     ></video>
   </div>
 
-  <div id="unmute-overlay">
-    <div class="unmute-btn">
-      <div class="unmute-icon">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
-        </svg>
-      </div>
-      <span class="unmute-label">Tap to unmute</span>
-    </div>
-  </div>
+  <button id="mute-toggle" class="muted" aria-label="Toggle mute">
+    <!-- audible speaker (shown when sound is on) -->
+    <svg class="icon-mute" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77 0-4.28-2.99-7.86-7-8.77z"/>
+    </svg>
+    <!-- muted speaker (shown when sound is off) -->
+    <svg class="icon-unmute" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+    </svg>
+    <span class="label">Unmute</span>
+  </button>
 
   <div id="message">
     <div class="inner">
@@ -144,7 +131,8 @@
 
   <script>
     const player = document.getElementById('player');
-    const overlay = document.getElementById('unmute-overlay');
+    const muteToggle = document.getElementById('mute-toggle');
+    const muteLabel = muteToggle.querySelector('.label');
     const message = document.getElementById('message');
     const msgTitle = document.getElementById('msg-title');
     const msgBody = document.getElementById('msg-body');
@@ -154,6 +142,13 @@
       msgBody.innerHTML = body;
       message.classList.add('visible');
       player.style.display = 'none';
+      muteToggle.style.display = 'none';
+    }
+
+    function syncMuteUI() {
+      const muted = player.muted || player.volume === 0;
+      muteToggle.classList.toggle('muted', muted);
+      muteLabel.textContent = muted ? 'Unmute' : 'Mute';
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -169,15 +164,11 @@
       const src = `${base}/${encodeURIComponent(videoName)}`;
       player.src = src;
 
-      // Try to play with sound first; fall back to muted autoplay if blocked.
+      // Try to play with sound; fall back to muted autoplay if the browser blocks it.
       player.play().catch(() => {
         player.muted = true;
-        player.play().then(() => {
-          overlay.classList.add('visible');
-        }).catch(() => {
-          // Even muted autoplay was blocked — user will use the controls.
-        });
-      });
+        return player.play().catch(() => {});
+      }).finally(syncMuteUI);
 
       player.addEventListener('error', () => {
         showMessage(
@@ -185,22 +176,32 @@
           `Tried: <code>${src}</code><br><br>Check the filename, the bucket's public access, and CORS if applicable.`
         );
       });
+
+      // Keep the button in sync if the user mutes via the native controls
+      player.addEventListener('volumechange', syncMuteUI);
     }
 
-    // Tap-to-unmute
-    overlay.addEventListener('click', () => {
-      player.muted = false;
-      player.volume = 1;
-      overlay.classList.remove('visible');
+    muteToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (player.muted) {
+        player.muted = false;
+        if (player.volume === 0) player.volume = 1;
+      } else {
+        player.muted = true;
+      }
+      syncMuteUI();
     });
 
-    // Best-effort fullscreen on first interaction
-    document.addEventListener('click', () => {
+    // Best-effort fullscreen on first interaction (skip clicks on the mute button)
+    function fsOnFirstClick(e) {
+      if (e.target.closest('#mute-toggle')) return;
+      document.removeEventListener('click', fsOnFirstClick);
       const el = document.documentElement;
       if (document.fullscreenElement) return;
       if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    }, { once: true });
+    }
+    document.addEventListener('click', fsOnFirstClick);
   </script>
 
 </body>
